@@ -34,7 +34,18 @@ This attaches Playwright to Edge instead of launching its own browser. The secur
 
 
 
-## Extract values
+## Extract using your normal Edge login (experimental)
+
+1. Open the Strava activity's **Analysis** page in your normal, already logged-in Edge window.
+2. Open [strava_console.js](strava_console.js) on GitHub and copy its entire contents.
+3. Press **F12**, open **Console**, paste the script and press Enter. Edge may require typing `allow pasting` before it permits pasting code. Review code before pasting.
+4. Click directly inside the speed graph when the console asks you to.
+5. If the chart responds to synthetic mouse events, `samples.csv` will download automatically.
+6. Check that distance and elapsed time vary and increase as expected. If the console reports fewer than five distinct pairs, no CSV is generated; send the diagnostics for a revised approach.
+
+**Important:** This is an unverified first version. Some Strava chart implementations ignore synthetic events or expose multiple competing values in the page text. Do not trust the CSV until checked against manual hover values. The existing Python `merge_gpx.py` still handles merging the validated CSV with the GPX.
+
+## Extract values (Playwright alternative)
 
 ```powershell
 python strava_extract.py "https://www.strava.com/activities/19461815059/analysis" --output samples.csv --debug hover_debug
