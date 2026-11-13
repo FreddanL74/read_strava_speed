@@ -12,7 +12,27 @@ py -m venv .venv
 pip install -r requirements.txt
 ```
 
-Microsoft Edge must be installed. Log into Strava in the Edge window opened by the script.
+Microsoft Edge must be installed.
+
+### If Strava login fails in automated Edge
+
+Use a separate, manually launched Edge session with remote debugging. Close **all** Edge windows first, then run in PowerShell:
+
+```powershell
+& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=9222 --user-data-dir="$env:LOCALAPPDATA\StravaDebugEdge"
+```
+
+If Edge is installed under `C:\Program Files\Microsoft\Edge\Application\msedge.exe`, use that path instead.
+
+Log into Strava **in this newly opened window** and open the analysis page. In another PowerShell window, run:
+
+```powershell
+python strava_extract.py "https://www.strava.com/activities/19461815059/analysis" --cdp http://127.0.0.1:9222 --output samples.csv --debug hover_debug
+```
+
+This attaches Playwright to Edge instead of launching its own browser. The security sandbox stays enabled. A separate browser profile is required by recent Chromium versions for remote debugging; logging into normal Edge does not automatically log into this profile. Keep debugging bound to localhost and close the debug browser after use. Do not share this profile directory.
+
+
 
 ## Extract values
 
