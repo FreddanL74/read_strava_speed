@@ -1,0 +1,7 @@
+.strava-browser/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.gpx
+*.csv
+hover_debug/
