@@ -4,6 +4,8 @@
   if (window.__stravaSamplerRunning) return console.warn("Sampler already running");
   window.__stravaSamplerRunning = true;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const STEP_PX = 1; // every horizontal screen pixel
+  const WAIT_MS = 350; // allow Strava labels to settle after each move
   const number = s => {
     if (s == null) return null;
     s = s.replace(/\s/g, "");
@@ -30,8 +32,9 @@
       const m = (re) => t.match(re)?.[1];
       let x;
       if ((x=m(/(?:^|[^\d])([\d.,\s]+)\s*km(?!\s*\/)/i))) result.distance_km=number(x);
-      if ((x=m(/(\d{1,3}:\d{2}:\d{2})/))) {
-        const [h,min,s]=x.split(":").map(Number); result.elapsed_s=h*3600+min*60+s;
+      if ((x=m(/\b(\d{1,3}:\d{2}:\d{2}|\d{1,3}:\d{2})\b/))) {
+        const parts=x.split(":").map(Number);
+        result.elapsed_s=parts.length===3 ? parts[0]*3600+parts[1]*60+parts[2] : parts[0]*60+parts[1];
       }
       if ((x=m(/([-+]?\d[\d.,\s]*)\s*km\s*\/\s*h/i))) result.speed_kmh=number(x);
       if ((x=m(/([-+]?\d[\d.,\s]*)\s*rpm/i))) result.cadence_rpm=number(x);
@@ -62,9 +65,10 @@
       }
     };
     let before=snapshot();
-    for(let dx=2;dx<b.width-2;dx+=2) {
+    console.log("Sampling every",STEP_PX,"pixel; waiting",WAIT_MS,"ms per position. Approx seconds:",Math.ceil((b.width-4)/STEP_PX)*WAIT_MS/1000);
+    for(let dx=2;dx<b.width-2;dx+=STEP_PX) {
       move(b.left+dx);
-      await sleep(65);
+      await sleep(WAIT_MS);
       const after=snapshot();
       const changed=[];
       for(const [el,t] of after) if(before.get(el)!==t) changed.push(t);
@@ -84,15 +88,16 @@
     console.log("Samples:",rows.length,"Unique distance/time pairs:",unique,"First:",rows[0],"Last:",rows.at(-1));
     console.log("First changed text samples:",changes.filter(a=>a.length).slice(0,8));
     if(unique<5) {
-      console.warn("Could not reliably parse changing distance/time. No CSV exported. Please copy the console diagnostics.");
-      return;
+      console.warn("Distance/time parser found fewer than 5 unique pairs. Exporting diagnostic data anyway; do NOT use for GPX merging.");
+      const debugText=changes.filter(a=>a.length).slice(0,50);
+      console.log("Changed readouts for troubleshooting:",debugText);
     }
     const csv=[fields.join(","),...rows.map(r=>fields.map(k=>r[k]??"").join(","))].join("\r\n");
     const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="samples.csv";
     document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href),10000);
-    console.log("Exported samples.csv; verify first/last values before GPX merging.");
+    console.log("Exported samples.csv; verify first/last values and unique pairs before GPX merging.");
   } catch(e) {console.error(e)}
   finally {window.__stravaSamplerRunning=false}
 })();
